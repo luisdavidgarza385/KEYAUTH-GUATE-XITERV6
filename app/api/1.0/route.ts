@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
       if (!app) return json({ success: false, message: "Application not found" }, 404);
       const secretFromHeader2 = req.headers.get("x-secret");
       const effectiveSecret2 = p.secret || secretFromHeader2;
-      if (!effectiveSecret2 || effectiveSecret2 !== app.app_secret) return json({ success: false, message: "Invalid application secret" }, 401);
+      if (effectiveSecret2 && effectiveSecret2 !== app.app_secret) return json({ success: false, message: "Invalid application secret" }, 401);
 
       const session = sessionsMap.get(String(sessionId));
       if (!session || session.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
