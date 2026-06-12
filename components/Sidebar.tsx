@@ -16,6 +16,8 @@ import {
   Layers,
   Terminal,
   UserCheck,
+  Crown,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +26,7 @@ const SECTIONS = [
     label: "GENERAL",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: false },
+      { href: "/dashboard/buy-subscription", label: "Comprar Suscripción", icon: CreditCard, adminOnly: false },
       { href: "/dashboard/apps", label: "Aplicaciones", icon: Shield, adminOnly: false },
     ],
   },
@@ -32,9 +35,21 @@ const SECTIONS = [
     items: [
       { href: "/dashboard/licenses", label: "Licencias", icon: Key, adminOnly: false },
       { href: "/dashboard/users", label: "Users", icon: UserCheck, adminOnly: false },
-      { href: "/dashboard/sub-resellers", label: "Sub resellers", icon: Users, adminOnly: false },
-      { href: "/dashboard/sub-users", label: "Sub-usuarios", icon: Layers, adminOnly: false },
+      { href: "/dashboard/sub-resellers", label: "Sub resellers", icon: Users, subOnly: true },
+      { href: "/dashboard/sub-users", label: "Sub-usuarios", icon: Layers, subOnly: true },
       { href: "/dashboard/credits", label: "Créditos", icon: Coins, adminOnly: false },
+    ],
+  },
+  {
+    label: "SUSCRIPCIÓN",
+    items: [
+      { href: "/dashboard/subscriptions", label: "Subscriptions", icon: Crown, adminOnly: false },
+    ],
+  },
+  {
+    label: "ADMIN CREDITOS",
+    items: [
+      { href: "/dashboard/admin-creditos", label: "Admin Créditos", icon: Crown, adminOnly: false },
     ],
   },
   {
@@ -46,7 +61,7 @@ const SECTIONS = [
   },
 ];
 
-export function Sidebar({ role, email }: { role: "admin" | "seller" | "developer"; email: string }) {
+export function Sidebar({ role, email, hasSubscription }: { role: "admin" | "seller" | "developer"; email: string; hasSubscription?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const isAdmin = role === "admin" || role === "developer";
@@ -92,7 +107,13 @@ export function Sidebar({ role, email }: { role: "admin" | "seller" | "developer
 
       <nav className="flex-1 overflow-y-auto py-5 px-3">
         {SECTIONS.map((section) => {
-          const items = section.items.filter((i) => isAdmin || !i.adminOnly);
+          if (section.label === "SUSCRIPCIÓN" && !hasSubscription && role !== "developer") return null;
+          if (section.label === "ADMIN CREDITOS" && role !== "developer" && email !== "admcreditos") return null;
+          const items = section.items.filter((i) => {
+            if (i.adminOnly && !isAdmin) return false;
+            if ((i as any).subOnly && !hasSubscription && role !== "developer") return false;
+            return true;
+          });
           if (items.length === 0) return null;
           return (
             <div key={section.label} className="mb-5">
@@ -129,7 +150,7 @@ export function Sidebar({ role, email }: { role: "admin" | "seller" | "developer
         <div className="rounded-lg bg-zinc-900/60 border border-zinc-800/60 p-3 space-y-3">
           <div className="min-w-0">
             <div className="font-semibold text-sm text-zinc-100 truncate">{capitalizedUsername}</div>
-            <div className="text-[11px] text-zinc-500 truncate font-mono">MyCheat</div>
+            <div className="text-[11px] text-zinc-500 truncate font-mono">KeyAuth Pro</div>
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-zinc-850">
             <button

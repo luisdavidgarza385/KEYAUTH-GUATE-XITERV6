@@ -7,8 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function SubscriptionsPage() {
   const me = await requireAdmin();
-  if (me.role !== "developer" && me.role !== "admin") {
-    return <div className="p-8 text-center text-text-muted">Access denied. Only developers and admins can manage subscriptions.</div>;
+  const fullAdmin = await store.getAdminById(me.id);
+  const hasSub = fullAdmin?.subscription_end ? new Date(fullAdmin.subscription_end).getTime() > Date.now() : false;
+  if (me.role !== "developer" && (me.role !== "admin" || !hasSub)) {
+    return <div className="p-8 text-center text-text-muted">Access denied. A subscription is required to manage subscriptions.</div>;
   }
 
   const allAdmins = await store.listAdmins();

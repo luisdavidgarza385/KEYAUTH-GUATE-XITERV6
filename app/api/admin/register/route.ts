@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const role = allAdmins.length === 0 ? "developer" : "admin";
 
     const hash = await bcrypt.hash(password, 10);
-    const admin = await store.createAdmin({ email, password_hash: hash, role });
+    const admin = await store.createAdmin({ email, password_hash: hash, role, credits: 1000 });
 
     const cookieValue = signSessionValue({ id: admin.id, email: admin.email, role: admin.role as "admin" | "seller" | "developer" });
 

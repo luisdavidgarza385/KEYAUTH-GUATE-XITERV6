@@ -65,14 +65,28 @@ export function CreateLicenseForApp({ appId }: { appId: string }) {
 
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/5 border border-blue-500/20 rounded text-xs">
+        <span className="text-text-dim">Costo:</span>
+        <span className="font-semibold text-blue-400">35 coins por licencia</span>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="label">Count</label>
           <input type="number" min={1} max={500} className="input text-sm" value={count} onChange={(e) => setCount(parseInt(e.target.value) || 1)} />
         </div>
         <div>
-          <label className="label">Days</label>
-          <input type="number" min={1} className="input text-sm" value={duration} onChange={(e) => setDuration(parseInt(e.target.value) || 30)} />
+          <label className="label">Duración</label>
+          <select className="input text-sm" value={duration} onChange={(e) => setDuration(parseInt(e.target.value))}>
+            <option value={1}>1 día</option>
+            <option value={3}>3 días</option>
+            <option value={7}>7 días</option>
+            <option value={15}>15 días</option>
+            <option value={30}>30 días</option>
+            <option value={90}>90 días</option>
+            <option value={180}>180 días</option>
+            <option value={365}>365 días</option>
+            <option value={36500}>De por vida</option>
+          </select>
         </div>
         <div>
           <label className="label">Level</label>

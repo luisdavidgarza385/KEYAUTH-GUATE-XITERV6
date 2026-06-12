@@ -1,5 +1,5 @@
 import { store } from "@/lib/store";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, getScopedAppIds } from "@/lib/auth";
 import { Settings as SettingsIcon, Key, Palette } from "lucide-react";
 import { CopyButton } from "@/components/CopyButton";
 import { VariablesManager } from "@/components/VariablesManager";
@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const admin = await requireAdmin();
-  const apps = await store.listApps();
+  const scopedIds = await getScopedAppIds(admin);
+  const allApps = await store.listApps();
+  const apps = scopedIds === null ? allApps : allApps.filter((a) => scopedIds.includes(a.id));
 
   return (
     <div className="p-8 space-y-6">

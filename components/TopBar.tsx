@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Home, AlertCircle } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
 import { store } from "@/lib/store";
 import { CreateMenu, CreateAppInlineButton } from "@/components/CreateMenu";
 import { getScopedAppIds } from "@/lib/auth";
@@ -36,12 +36,6 @@ export async function TopBar({ current, showCreate = true, apps, currentAppId }:
             </Link>
           </>
         )}
-        <ChevronRight className="w-3.5 h-3.5 text-text-dim" />
-        <span className="inline-flex items-center gap-1.5 text-danger">
-          <AlertCircle className="w-3.5 h-3.5" />
-          You don&apos;t have a subscription!
-        </span>
-        <a href="#" className="text-accent-glow hover:text-accent transition">Upgrade Now.</a>
         {current && (
           <>
             {current.href ? (

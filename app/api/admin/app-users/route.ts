@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { requireAdmin, safeRoute } from "@/lib/api-helpers";
 import { store } from "@/lib/store";
-import { getScopedAppIds, checkQuota } from "@/lib/auth";
+import { getScopedAppIds, checkQuota, hasUnlimitedQuota } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,16 @@ export async function POST(req: NextRequest) {
     const quota = await checkQuota(me, appId);
     if (!quota.ok) {
       return { status: 403, data: { success: false, message: quota.reason } };
+    }
+
+    const unlimited = await hasUnlimitedQuota(me.id);
+    if (!unlimited) {
+      const fullAdmin = await store.getAdminById(me.id);
+      const currentCredits = fullAdmin?.credits ?? 0;
+      if (currentCredits < 35) {
+        return { status: 403, data: { success: false, message: `Need 35 coins to create a user, you have ${currentCredits}.` } };
+      }
+      await store.updateAdmin(me.id, { ...fullAdmin!, credits: currentCredits - 35 });
     }
 
     const existing = await store.getAppUser(appId, username);

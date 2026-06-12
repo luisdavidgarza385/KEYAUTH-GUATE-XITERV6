@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { requireAdmin, safeRoute } from "@/lib/api-helpers";
 import { store } from "@/lib/store";
 import { generateKey } from "@/lib/utils";
-import { getScopedAppIds, checkQuota } from "@/lib/auth";
+import { getScopedAppIds, checkQuota, hasUnlimitedQuota } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +40,17 @@ export async function POST(req: NextRequest) {
     }
     if (quota.limit < Infinity && quota.licenses + count > quota.limit) {
       return { status: 403, data: { success: false, message: `License limit is ${quota.limit}. You have ${quota.licenses} and tried to add ${count}.` } };
+    }
+
+    const unlimited = await hasUnlimitedQuota(me.id);
+    if (!unlimited) {
+      const fullAdmin = await store.getAdminById(me.id);
+      const cost = count * 35;
+      const currentCredits = fullAdmin?.credits ?? 0;
+      if (currentCredits < cost) {
+        return { status: 403, data: { success: false, message: `Need ${cost} coins, you have ${currentCredits}. Each license costs 35 coins.` } };
+      }
+      await store.updateAdmin(me.id, { ...fullAdmin!, credits: currentCredits - cost });
     }
 
     const items = Array.from({ length: count }).map(() => {

@@ -4,7 +4,13 @@ create table if not exists admin_users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
   password_hash text not null,
-  role text not null default 'admin' check (role in ('admin','seller','developer')),
+  "role" text not null default 'admin' check ("role" in ('admin','seller','developer')),
+  credits numeric default 0,
+  status text not null default 'active' check (status in ('active','banned')),
+  api_key text,
+  subscription_end timestamptz,
+  subscription_app_id uuid,
+  seller_label text default 'keyauthpro',
   created_at timestamptz default now()
 );
 

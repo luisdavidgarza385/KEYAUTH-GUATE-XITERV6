@@ -1,18 +1,18 @@
 import { KeyRound } from "lucide-react";
 import { GeneratorForm } from "./form";
 import { store } from "@/lib/store";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, getScopedAppIds } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function LicenseGeneratorPage() {
   const me = await requireAdmin();
-  const apps = await store.listApps();
-  const myApps = me.role === "seller" ? apps.filter((a) => a.seller_id === me.id) : apps;
+  const scopedIds = await getScopedAppIds(me);
+  const allApps = await store.listApps();
+  const myApps = scopedIds === null ? allApps : allApps.filter((a) => scopedIds.includes(a.id));
   const fullAdmin = await store.getAdminById(me.id);
-  const isSeller = me.role === "seller";
   const hasSub = fullAdmin?.subscription_end ? new Date(fullAdmin.subscription_end).getTime() > Date.now() : false;
-  const forcePrefix = isSeller && !hasSub;
+  const forcePrefix = me.role !== "developer" && !hasSub;
 
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">

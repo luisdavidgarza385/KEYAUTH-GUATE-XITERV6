@@ -105,6 +105,7 @@ function CreateUserModal({ apps, onClose, defaultAppId }: { apps: App[]; onClose
   const [password, setPassword] = useState(generatePassword());
   const [showPw, setShowPw] = useState(false);
   const [email, setEmail] = useState("");
+  const [durationDisplay, setDurationDisplay] = useState("30|days");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [created, setCreated] = useState<{ username: string; password: string } | null>(null);
@@ -117,10 +118,14 @@ function CreateUserModal({ apps, onClose, defaultAppId }: { apps: App[]; onClose
       return;
     }
     setLoading(true);
+    const [durVal, durUnit] = durationDisplay.split("|");
+    let durationDays = parseInt(durVal);
+    if (durUnit === "months") durationDays *= 30;
+    else if (durUnit === "years") durationDays *= 365;
     const res = await fetch("/api/admin/app-users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ appId, username, password, email: email || undefined }),
+      body: JSON.stringify({ appId, username, password, email: email || undefined, durationDays }),
     });
     const data = await res.json();
     setLoading(false);
@@ -160,6 +165,10 @@ function CreateUserModal({ apps, onClose, defaultAppId }: { apps: App[]; onClose
         </div>
       ) : (
         <div className="space-y-3">
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-accent/5 border border-accent/20 rounded-lg text-xs">
+            <span className="text-text-dim">Costo:</span>
+            <span className="font-semibold text-accent">35 coins</span>
+          </div>
           <div>
             <FieldLabel required>Application</FieldLabel>
             <select className="input" value={appId} onChange={(e) => setAppId(e.target.value)}>
@@ -191,6 +200,25 @@ function CreateUserModal({ apps, onClose, defaultAppId }: { apps: App[]; onClose
             <FieldLabel info="Optional email for the user">Email</FieldLabel>
             <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" />
           </div>
+          <div>
+            <FieldLabel required>Duración de suscripción</FieldLabel>
+            <select className="input" value={durationDisplay} onChange={(e) => setDurationDisplay(e.target.value)}>
+              <option value="1|days">1 día</option>
+              <option value="3|days">3 días</option>
+              <option value="7|days">7 días</option>
+              <option value="15|days">15 días</option>
+              <option value="30|days">30 días</option>
+              <option value="90|days">90 días</option>
+              <option value="180|days">180 días</option>
+              <option value="365|days">365 días</option>
+              <option value="1|months">1 mes</option>
+              <option value="3|months">3 meses</option>
+              <option value="6|months">6 meses</option>
+              <option value="12|months">12 meses</option>
+              <option value="1|years">1 año</option>
+              <option value="0|lifetime">De por vida</option>
+            </select>
+          </div>
           {err && <div className="text-sm text-danger bg-danger/10 border border-danger/30 rounded px-3 py-2">{err}</div>}
           <div className="flex justify-end gap-2 pt-1">
             <button onClick={onClose} className="btn-secondary text-sm">Cancel</button>
@@ -209,7 +237,7 @@ function CreateLicenseModal({ apps, onClose, defaultAppId, forcePrefix }: { apps
   const [appId, setAppId] = useState(defaultAppId || apps[0]?.id || "");
   const [packageName, setPackageName] = useState("Bypass");
   const [count, setCount] = useState(1);
-  const [prefix, setPrefix] = useState("Guate Xiter");
+  const [prefix, setPrefix] = useState(forcePrefix ? "KEYAUTHPRO" : "Guate Xiter");
   const [suffix, setSuffix] = useState("****-****-****-****");
   const [level, setLevel] = useState(1);
   const [note, setNote] = useState("");
@@ -279,9 +307,18 @@ function CreateLicenseModal({ apps, onClose, defaultAppId, forcePrefix }: { apps
         </div>
       ) : (
         <div className="space-y-4 text-zinc-300">
-          <div className="text-[11px] font-bold text-zinc-500 uppercase -mt-2">
-            Plan: <span className="text-emerald-400">Ilimitado (sin costo)</span>
-          </div>
+          {forcePrefix ? (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs">
+              <span className="text-text-dim">Costo:</span>
+              <span className="font-semibold text-blue-400">35 coins por licencia</span>
+              <span className="text-text-dim ml-2"> Máscara: <code className="text-blue-400 font-mono">KEYAUTHPRO</code></span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg text-xs">
+              <span className="text-text-dim">Suscripción activa:</span>
+              <span className="font-semibold text-emerald-400">Sin costo por licencia — máscara personalizable</span>
+            </div>
+          )}
           
           <div className="h-px bg-zinc-800/80 my-2" />
 
@@ -299,7 +336,7 @@ function CreateLicenseModal({ apps, onClose, defaultAppId, forcePrefix }: { apps
               value={packageName} 
               onChange={(e) => {
                 setPackageName(e.target.value);
-                setPrefix(e.target.value);
+                if (!forcePrefix) setPrefix(e.target.value);
               }}
             >
               <option value="Bypass" className="bg-zinc-950">Bypass</option>
@@ -348,7 +385,7 @@ function CreateLicenseModal({ apps, onClose, defaultAppId, forcePrefix }: { apps
               <Info className="w-3.5 h-3.5 text-emerald-500" /> Vista previa
             </div>
             <code className="font-mono text-zinc-300 text-[12px]">
-              {prefix || "Guate Xiter"}-{suffix || "****-****-****-****"}
+              {prefix || "KEYAUTHPRO"}-{suffix || "****-****-****-****"}
             </code>
           </div>
 

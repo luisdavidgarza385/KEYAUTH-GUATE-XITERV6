@@ -1,5 +1,5 @@
 import { store } from "@/lib/store";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, getScopedAppIds } from "@/lib/auth";
 import { FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -10,8 +10,10 @@ export default async function LogsPage({
 }: {
   searchParams: { app?: string; level?: string };
 }) {
-  await requireAdmin();
-  const apps = await store.listApps();
+  const me = await requireAdmin();
+  const scopedIds = await getScopedAppIds(me);
+  const allApps = await store.listApps();
+  const apps = scopedIds === null ? allApps : allApps.filter((a) => scopedIds.includes(a.id));
   const logs = await store.listLogs({
     appId: searchParams.app || undefined,
     level: searchParams.level || undefined,

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const appId = body.appid || url.searchParams.get("appid");
     const sessionId = body.sessionid || url.searchParams.get("sessionid");
     const username = body.username || url.searchParams.get("username");
-    const password = body.password || url.searchParams.get("password");
+    const password = body.pass || body.password || url.searchParams.get("pass") || url.searchParams.get("password");
     const email = body.email || url.searchParams.get("email") || null;
     const license = body.key || url.searchParams.get("key");
     const hwid = body.hwid || url.searchParams.get("hwid") || null;

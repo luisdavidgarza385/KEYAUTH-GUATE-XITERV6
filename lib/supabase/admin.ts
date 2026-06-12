@@ -4,10 +4,10 @@ let cached: ReturnType<typeof createBaseClient> | null = null;
 
 export const supabaseAdmin = () => {
   if (cached) return cached;
-  cached = createBaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dldetblriapomxthlkdn.supabase.co";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  cached = createBaseClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   return cached;
 };

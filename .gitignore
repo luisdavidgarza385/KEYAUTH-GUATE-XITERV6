@@ -8,4 +8,5 @@ out
 *.log
 .vercel
 
-.vercel
+# Firebase credentials
+basedatoskeyauth-firebase-adminsdk-fbsvc-63402cf5e6.json

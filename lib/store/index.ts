@@ -4,8 +4,7 @@ import type { Store } from "./types";
 
 const useLocal =
   process.env.STORAGE_BACKEND === "local" ||
-  !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL.includes("tu-proyecto");
+  !process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const store: Store = useLocal ? localStore : supabaseStore;
 

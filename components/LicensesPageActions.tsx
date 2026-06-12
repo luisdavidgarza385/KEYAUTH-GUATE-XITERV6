@@ -9,9 +9,9 @@ export function LicensesPageActions({ apps, filteredAppId, role, subscriptionEnd
   const [bulkOpen, setBulkOpen] = useState(false);
   const router = useRouter();
 
-  const isSeller = role === "seller";
+  const isDeveloper = role === "developer";
   const hasSub = subscriptionEnd ? new Date(subscriptionEnd).getTime() > Date.now() : false;
-  const forcePrefix = isSeller && !hasSub;
+  const forcePrefix = !isDeveloper && !hasSub;
 
   return (
     <>
@@ -121,9 +121,9 @@ function CreateLicenseInline({ apps, defaultAppId, onClose, forcePrefix }: { app
               </div>
               {forcePrefix && (
                 <div>
-                  <label className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Prefijo (fijo para sellers)</label>
-                  <input className="input font-mono bg-bg-secondary/50" value="KEYAUTHPRO" disabled />
-                  <p className="text-[10px] text-text-dim mt-1">Compra una suscripción para cambiar el prefijo.</p>
+                  <label className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1.5 block">Máscara de licencia</label>
+                  <input className="input font-mono bg-bg-secondary/50" value="KEYAUTHPRO-****-****-****-****" disabled />
+                  <p className="text-[10px] text-text-dim mt-1">Compra una suscripción para cambiar la máscara.</p>
                 </div>
               )}
               <div>

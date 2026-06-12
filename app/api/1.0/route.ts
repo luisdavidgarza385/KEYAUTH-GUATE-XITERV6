@@ -66,14 +66,16 @@ async function getParams(req: NextRequest): Promise<Record<string, string>> {
     }
   }
   if (params["data"] && params["sessionid"]) {
-    const session = sessionsMap.get(params["sessionid"]);
-    if (session && session.enckey) {
-      const decrypted = xorDecrypt(params["data"], params["sessionid"] + session.enckey);
-      try {
-        const sp = new URLSearchParams(decrypted);
-        for (const [k, v] of sp) params[k] = v;
-      } catch {}
-    }
+    try {
+      const session = await store.getSession(params["sessionid"]);
+      if (session) {
+        const decrypted = xorDecrypt(params["data"], params["sessionid"]);
+        try {
+          const sp = new URLSearchParams(decrypted);
+          for (const [k, v] of sp) params[k] = v;
+        } catch {}
+      }
+    } catch {}
   }
   for (const [k, v] of new URL(req.url).searchParams) {
     if (!params[k]) params[k] = v;
@@ -81,18 +83,7 @@ async function getParams(req: NextRequest): Promise<Record<string, string>> {
   return params;
 }
 
-const sessionsMap = new Map<string, any>();
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function cleanExpiredSessions(): void {
-  if (cleanExpiredSessions.lastClean && Date.now() - cleanExpiredSessions.lastClean < 60_000) return;
-  cleanExpiredSessions.lastClean = Date.now();
-  const now = new Date();
-  for (const [id, s] of sessionsMap) {
-    if (new Date(s.expires_at) < now) sessionsMap.delete(id);
-  }
-}
-cleanExpiredSessions.lastClean = 0;
 
 function checkRateLimit(ip: string, maxReqs = 20, windowMs = 10_000): boolean {
   const now = Date.now();
@@ -105,13 +96,6 @@ function checkRateLimit(ip: string, maxReqs = 20, windowMs = 10_000): boolean {
   entry.count++;
   return true;
 }
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(ip);
-  }
-}, 30_000);
 
 function sanitizeMessage(msg: string): string {
   return msg.replace(/[<>&"']/g, "");
@@ -150,7 +134,7 @@ export async function POST(req: NextRequest) {
       const enckey = secureId(64);
       const nonce = secureId(16);
       const expires = new Date(Date.now() + 86400000);
-      sessionsMap.set(sessionId, { app_id: app.id, user_id: null, ip, hwid: p.hwid || null, enckey, expires_at: expires.toISOString(), valid: true });
+      await store.createSession({ session_id: sessionId, app_id: app.id, user_id: null, ip, hwid: p.hwid || null, expires_at: expires.toISOString(), valid: true });
       await store.createLog({ app_id: app.id, user_id: null, message: `init from ${ip}`, level: "info" });
 
       const allLicenses = await store.listLicenses({ appId: app.id });
@@ -177,7 +161,6 @@ export async function POST(req: NextRequest) {
         subscription: "",
         expiry: "",
       };
-      cleanExpiredSessions();
       return json({
         success: true,
         sessionid: sessionId,
@@ -207,8 +190,8 @@ export async function POST(req: NextRequest) {
       const effectiveSecret2 = p.secret || secretFromHeader2;
       if (effectiveSecret2 && effectiveSecret2 !== app.app_secret) return json({ success: false, message: "Invalid application secret" }, 401);
 
-      const session = sessionsMap.get(String(sessionId));
-      if (!session || session.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
+      const session2 = await store.getSession(String(sessionId));
+      if (!session2 || session2.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
 
       const user = await store.getAppUser(app.id, String(username));
       if (!user) return json({ success: false, message: "Invalid credentials" }, 401);
@@ -256,8 +239,8 @@ export async function POST(req: NextRequest) {
       if (!app) return json({ success: false, message: "Application not found" }, 404);
       if (app.status !== "active") return json({ success: false, message: "Application is " + app.status }, 403);
 
-      const session = sessionsMap.get(String(sessionId));
-      if (!session || session.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
+      const sessionReg = await store.getSession(String(sessionId));
+      if (!sessionReg || sessionReg.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
 
       const existing = await store.getAppUser(app.id, String(username));
       if (existing) return json({ success: false, message: "Username already exists" }, 409);
@@ -296,7 +279,7 @@ export async function POST(req: NextRequest) {
         expires_at: expires.toISOString(),
         uses: lic.uses + 1,
       });
-      sessionsMap.set(String(sessionId), { ...session, user_id: user.id, hwid, ip });
+      await store.updateSession(String(sessionId), { user_id: user.id, hwid, ip });
       await store.createLog({ app_id: app.id, user_id: user.id, message: `registered ${username}`, level: "info" });
 
       return json({
@@ -326,7 +309,7 @@ export async function POST(req: NextRequest) {
       if (!app) return json({ success: false, message: "Application not found" }, 404);
       if (app.status !== "active") return json({ success: false, message: "Application is " + app.status }, 403);
 
-      const session = sessionsMap.get(String(sessionId));
+      const session = await store.getSession(String(sessionId));
       if (!session || session.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
 
       const lic = await store.getLicenseByKey(app.id, String(key));

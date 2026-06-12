@@ -83,8 +83,12 @@ export function clearAdminSession() {
 }
 
 export async function getScopedAppIds(me: AdminSession): Promise<string[] | null> {
-  if (me.role === "admin" || me.role === "developer") return null;
-  const apps = await store.listApps({ sellerId: me.id });
+  if (me.role === "developer") return null;
+  if (me.role === "admin") {
+    const hasSub = await hasUnlimitedQuota(me.id);
+    if (hasSub) return null;
+  }
+  const apps = await store.listApps({ ownerId: me.id });
   return apps.map((a) => a.id);
 }
 
@@ -94,14 +98,19 @@ export async function canAccessApp(me: AdminSession, appId: string): Promise<boo
   return apps.some((a) => a.id === appId);
 }
 
-export function hasUnlimitedQuota(me: AdminSession): boolean {
-  return true;
+export async function hasUnlimitedQuota(adminId: string): Promise<boolean> {
+  const admin = await store.getAdminById(adminId);
+  if (!admin) return false;
+  if (admin.role === "developer") return true;
+  if (admin.subscription_end && new Date(admin.subscription_end).getTime() > Date.now()) return true;
+  return false;
 }
 
-export const QUOTA_LIMIT = 10;
+export const QUOTA_LIMIT = 50;
 
 export async function checkQuota(me: AdminSession, appId: string): Promise<{ ok: boolean; reason?: string; users: number; licenses: number; limit: number }> {
-  if (hasUnlimitedQuota(me)) {
+  const unlimited = await hasUnlimitedQuota(me.id);
+  if (unlimited) {
     return { ok: true, users: 0, licenses: 0, limit: 9999 };
   }
   const [users, licenses] = await Promise.all([

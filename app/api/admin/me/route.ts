@@ -14,6 +14,7 @@ export async function GET() {
     if (!fullAdmin) {
       return NextResponse.json({ success: false, message: "Admin not found" }, { status: 404 });
     }
+    const hasSub = fullAdmin.subscription_end ? new Date(fullAdmin.subscription_end).getTime() > Date.now() : false;
     return NextResponse.json({
       success: true,
       data: {
@@ -23,6 +24,7 @@ export async function GET() {
         credits: fullAdmin.credits ?? 0,
         status: fullAdmin.status ?? "active",
         created_at: fullAdmin.created_at,
+        hasSubscription: hasSub,
       },
     });
   } catch (e: any) {

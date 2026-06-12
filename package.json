@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^10.0.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
+    "firebase": "^12.14.0",
+    "firebase-admin": "^14.0.0",
     "lucide-react": "^0.453.0",
     "next": "14.2.33",
     "react": "^18.3.1",

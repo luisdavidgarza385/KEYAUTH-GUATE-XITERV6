@@ -21,6 +21,7 @@ export function GeneratorForm({ apps, forcePrefix }: { apps: App[]; forcePrefix:
   const [err, setErr] = useState<string | null>(null);
   const [generated, setGenerated] = useState<string[] | null>(null);
   const [copied, setCopied] = useState(false);
+  const [planCost, setPlanCost] = useState(forcePrefix ? "35 coins por licencia" : "Sin costo (suscripción activa)");
 
   const selectedApp = apps.find((a) => a.id === appId);
 
@@ -93,10 +94,18 @@ export function GeneratorForm({ apps, forcePrefix }: { apps: App[]; forcePrefix:
     <div className="space-y-5">
       <h3 className="font-semibold">Generar licencias</h3>
 
-      <div className="flex items-center gap-3 px-4 py-3 bg-accent/5 border border-accent/20 rounded-lg text-sm">
-        <span className="text-text-dim">Plan:</span>
-        <span className="font-semibold text-accent">Ilimitado (sin costo)</span>
-      </div>
+      {forcePrefix ? (
+        <div className="flex items-center gap-3 px-4 py-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-sm">
+          <span className="text-text-dim">Costo:</span>
+          <span className="font-semibold text-blue-400">35 coins por licencia</span>
+          <span className="text-text-dim ml-2">Máscara: <code className="text-blue-400 font-mono">KEYAUTHPRO</code></span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 px-4 py-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg text-sm">
+          <span className="text-text-dim">Suscripción activa:</span>
+          <span className="font-semibold text-emerald-400">Sin costo — máscara personalizable</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-4">

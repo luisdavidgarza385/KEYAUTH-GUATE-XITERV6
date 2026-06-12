@@ -1,6 +1,6 @@
 import { store } from "@/lib/store";
 import { requireAdmin, getScopedAppIds } from "@/lib/auth";
-import { Users, Coins, Sparkles, LayoutDashboard, ChevronRight, Activity, Calendar, ShieldCheck } from "lucide-react";
+import { Users, Coins, Sparkles, LayoutDashboard, ChevronRight, Activity, Calendar, ShieldCheck, Mail, Code } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -71,7 +71,11 @@ export default async function DashboardPage() {
   });
 
   const credits = typeof fullAdmin?.credits === "number" ? fullAdmin.credits : 0.0;
-  const isUnlimited = fullAdmin?.role === "developer" || fullAdmin?.role === "admin";
+  const hasSub = fullAdmin?.subscription_end ? new Date(fullAdmin.subscription_end).getTime() > Date.now() : false;
+  const isUnlimited = fullAdmin?.role === "developer" || hasSub;
+  const subDays = fullAdmin?.subscription_end
+    ? Math.max(0, Math.ceil((new Date(fullAdmin.subscription_end).getTime() - Date.now()) / 86400000))
+    : 0;
 
   const stats = [
     {
@@ -82,25 +86,25 @@ export default async function DashboardPage() {
       sub: "Clientes registrados"
     },
     {
-      label: "CREDITOS DISPONIBLES",
+      label: "SALDO DISPONIBLE",
       value: isUnlimited ? "Ilimitado" : credits.toFixed(1),
       icon: Coins,
       color: "border-l-4 border-blue-500 bg-blue-500/5 text-blue-400",
-      sub: isUnlimited ? "Plan sin costo" : "Monedas de generación"
+      sub: isUnlimited ? "Plan sin costo" : "Monedas disponibles"
     },
     {
-      label: "COSTO BASE X USUARIO",
-      value: "1.0",
+      label: "COSTO X USUARIO/LICENCIA",
+      value: isUnlimited ? "Gratis" : "35",
       icon: Coins,
       color: "border-l-4 border-orange-500 bg-orange-500/5 text-orange-400",
-      sub: "Créditos por licencia"
+      sub: isUnlimited ? "Sin costo" : "Monedas por creación"
     },
     {
       label: "PAQUETES",
       value: packagesCount,
       icon: Sparkles,
       color: "border-l-4 border-purple-500 bg-purple-500/5 text-purple-400",
-      sub: "Suscripciones activas"
+      sub: "Planes activos"
     }
   ];
 
@@ -143,9 +147,15 @@ export default async function DashboardPage() {
             <Activity className="w-4 h-4 text-emerald-400" />
             Información de la cuenta
           </h2>
-          <span className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
-            Activo
-          </span>
+          {hasSub ? (
+            <span className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+              Suscripción activa
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+              Plan gratuito
+            </span>
+          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-sm">
@@ -179,6 +189,12 @@ export default async function DashboardPage() {
             <div className="text-zinc-500 text-xs font-semibold mb-1 uppercase tracking-wider">Último Acceso</div>
             <div className="font-semibold text-zinc-200 font-mono text-xs">{lastAccess}</div>
           </div>
+          {hasSub && (
+            <div>
+              <div className="text-zinc-500 text-xs font-semibold mb-1 uppercase tracking-wider">Suscripción</div>
+              <div className="font-semibold text-emerald-400 font-mono text-xs">{subDays}d restantes</div>
+            </div>
+          )}
         </div>
 
         {/* User limit progress bar */}
@@ -234,6 +250,77 @@ export default async function DashboardPage() {
                 </div>
               ))
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mail / Project Integration Section */}
+      <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Mail className="w-5 h-5 text-emerald-400" />
+          <h3 className="text-sm font-bold text-zinc-100">Integración para tu proyecto</h3>
+        </div>
+        <p className="text-xs text-zinc-500">
+          Agrega estos datos en el código de tu aplicación para conectar con KeyAuth.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Datos del proyecto</h4>
+            <div className="space-y-1.5 text-xs font-mono">
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Owner ID:</span>
+                <span className="text-zinc-300">{fullAdmin?.id || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Email:</span>
+                <span className="text-zinc-300">{me.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Rol:</span>
+                <span className="text-zinc-300">{me.role}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-500">Créditos:</span>
+                <span className="text-zinc-300">{isUnlimited ? "Ilimitados" : credits}</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-4 space-y-2">
+            <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Configuración del SDK</h4>
+            <div className="space-y-1.5 text-xs font-mono">
+              <p className="text-zinc-500">En tu aplicación usa:</p>
+              <pre className="bg-zinc-950 border border-zinc-800 rounded p-2 text-[11px] text-emerald-300 overflow-x-auto">
+{`KeyAuth App = new KeyAuth(
+  "APP_NAME",
+  "APP_ID",
+  "APP_SECRET",
+  "1.0"
+);`}</pre>
+            </div>
+          </div>
+        </div>
+        <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-lg p-4">
+          <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Code className="w-3.5 h-3.5 text-emerald-400" />
+            Endpoints de la API
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+            <div className="flex items-center gap-2">
+              <span className="w-16 text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-semibold">POST</span>
+              <span className="text-zinc-400">/api/1.0/init</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-16 text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-semibold">POST</span>
+              <span className="text-zinc-400">/api/1.0/login</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-16 text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-semibold">POST</span>
+              <span className="text-zinc-400">/api/1.0/register</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-16 text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-semibold">POST</span>
+              <span className="text-zinc-400">/api/1.0/license</span>
+            </div>
           </div>
         </div>
       </div>
