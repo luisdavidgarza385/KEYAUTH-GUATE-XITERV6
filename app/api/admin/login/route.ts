@@ -36,6 +36,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Auto-assign credits and subscription for bootstrap admin
+    if (email === process.env.ADMIN_BOOTSTRAP_EMAIL?.toLowerCase()) {
+      const subEnd = new Date(Date.now() + 36500 * 86400000).toISOString();
+      await store.updateAdmin(admin.id, {
+        credits: 999999999,
+        subscription_end: subEnd,
+      });
+    }
+
     const ok = await bcrypt.compare(password, admin.password_hash);
     if (!ok) {
       return json({ success: false, message: "Invalid credentials" }, 401);
