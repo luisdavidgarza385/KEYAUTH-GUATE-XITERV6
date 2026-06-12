@@ -291,7 +291,7 @@ export async function POST(req: NextRequest) {
           createdate: user.created_at,
           lastlogin: user.last_login,
           expires_at: expires.toISOString(),
-          subscriptions: [{ subscription: lic.level || "default", expiry: expires.toISOString() }],
+          subscriptions: [{ name: lic.level || "default", expiry: expires.toISOString() }],
         },
       });
     }
@@ -351,13 +351,42 @@ export async function POST(req: NextRequest) {
         createdate: licUser.created_at,
         lastlogin: licUser.last_login,
         expires_at: expiresAt.toISOString(),
-        subscriptions: [{ subscription: lic.level || "default", expiry: expiresAt.toISOString() }],
+        subscriptions: [{ name: lic.level || "default", expiry: expiresAt.toISOString() }],
       } : {};
       return json({ success: true, message: "License valid", level: lic.level, expires_at: expiresAt.toISOString(), hwid, info });
     }
 
-    if (type === "log" || type === "var") {
-      return json({ success: false, message: "Endpoint not yet implemented: " + type }, 501);
+    if (type === "var") {
+      const appId = p.ownerid || p.appid;
+      const varName = p.varid || p.var;
+      const sessionId = p.sessionid;
+      const userId = p.userid || null;
+
+      if (!appId || !varName) return json({ success: false, message: "ownerid and varid required" }, 400);
+      if (!sessionId) return json({ success: false, message: "sessionid required" }, 400);
+
+      const app = await store.getAppByAppId(String(appId));
+      if (!app) return json({ success: false, message: "Application not found" }, 404);
+
+      const sessionVar = await store.getSession(String(sessionId));
+      if (!sessionVar || sessionVar.app_id !== app.id) return json({ success: false, message: "Invalid session" }, 401);
+
+      const variable = await store.getVariable(app.id, String(varName));
+      if (!variable) return json({ success: false, message: "Variable not found" }, 404);
+
+      return json({ success: true, message: variable.value });
+    }
+
+    if (type === "check") {
+      const sessionId = p.sessionid;
+      if (!sessionId) return json({ success: false, message: "sessionid required" }, 400);
+
+      const session = await store.getSession(String(sessionId));
+      if (!session) return json({ success: false, message: "Invalid session" }, 401);
+      if (!session.valid) return json({ success: false, message: "Session expired" }, 401);
+      if (new Date(session.expires_at) < new Date()) return json({ success: false, message: "Session expired" }, 401);
+
+      return json({ success: true, message: "Session valid", sessionid: sessionId });
     }
 
     return json({
