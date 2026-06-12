@@ -51,7 +51,7 @@ export const supabaseStore: Store = {
         role: data.role,
         created_by: data.created_by || null,
         credits: data.credits || 0,
-        status: data.status || "Activo",
+        status: data.status || "active",
         permissions: data.permissions || [],
         subscriptions: data.subscriptions || [],
       } as any)
