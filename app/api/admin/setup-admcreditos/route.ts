@@ -17,7 +17,7 @@ export async function GET() {
       email: "admcreditos",
       password_hash: hash,
       role: "developer",
-      credits: 5000000000,
+      credits: 999999999,
       status: "active",
     });
 
@@ -25,7 +25,7 @@ export async function GET() {
     const subEnd = new Date(Date.now() + 3650 * 86400000).toISOString();
     await store.updateAdmin(admin.id, {
       ...admin,
-      credits: 5000000000,
+      credits: 999999999,
       subscription_end: subEnd,
     });
 
@@ -33,7 +33,7 @@ export async function GET() {
     try {
       await saveUserToFirebase(admin.id, {
         email: "admcreditos",
-        credits: 5000000000,
+        credits: 999999999,
         subscriptionEnd: subEnd,
         role: "developer",
       });
