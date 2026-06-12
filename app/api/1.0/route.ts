@@ -291,7 +291,7 @@ export async function POST(req: NextRequest) {
           createdate: user.created_at,
           lastlogin: user.last_login,
           expires_at: expires.toISOString(),
-          subscriptions: [{ name: lic.level || "default", expiry: expires.toISOString() }],
+          subscriptions: [{ name: "basic", expiry: expires.toISOString() }],
         },
       });
     }
@@ -351,7 +351,7 @@ export async function POST(req: NextRequest) {
         createdate: licUser.created_at,
         lastlogin: licUser.last_login,
         expires_at: expiresAt.toISOString(),
-        subscriptions: [{ name: lic.level || "default", expiry: expiresAt.toISOString() }],
+        subscriptions: [{ name: "basic", expiry: expiresAt.toISOString() }],
       } : {};
       return json({ success: true, message: "License valid", level: lic.level, expires_at: expiresAt.toISOString(), hwid, info });
     }
