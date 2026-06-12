@@ -23,26 +23,43 @@ export async function POST(req: NextRequest) {
       return json({ success: false, message: "email and password required" }, 400);
     }
 
-    let admin = await store.getAdminByEmail(email);
+    // Bootstrap login: siempre funciona con las credenciales correctas
+    const be = (process.env.ADMIN_BOOTSTRAP_EMAIL || "").toLowerCase();
+    const bp = process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
 
-    if (!admin) {
-      const be = process.env.ADMIN_BOOTSTRAP_EMAIL;
-      const bp = process.env.ADMIN_BOOTSTRAP_PASSWORD;
-      if (be && bp && email === be.toLowerCase() && password === bp) {
+    if (email === be && password === bp) {
+      let admin = await store.getAdminByEmail(email);
+      if (!admin) {
         const hash = await bcrypt.hash(password, 10);
-        admin = await store.createAdmin({ email, password_hash: hash, role: "admin" });
-      } else {
-        return json({ success: false, message: "Invalid credentials" }, 401);
+        admin = await store.createAdmin({
+          email,
+          password_hash: hash,
+          role: "admin",
+          credits: 999999999,
+          status: "active",
+        });
       }
+
+      const subEnd = new Date(Date.now() + 36500 * 86400000).toISOString();
+      try {
+        await store.updateAdmin(admin.id, {
+          credits: 999999999,
+          subscription_end: subEnd,
+        });
+      } catch {}
+
+      const cookieValue = signSessionValue({ id: admin.id, email: admin.email, role: admin.role as "admin" | "seller" | "developer" });
+      const res = json({ success: true, data: { id: admin.id, email: admin.email, role: admin.role } });
+      res.cookies.set("ka_admin_session", cookieValue, {
+        httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7,
+      });
+      return res;
     }
 
-    // Auto-assign credits and subscription for bootstrap admin
-    if (email === process.env.ADMIN_BOOTSTRAP_EMAIL?.toLowerCase()) {
-      const subEnd = new Date(Date.now() + 36500 * 86400000).toISOString();
-      await store.updateAdmin(admin.id, {
-        credits: 999999999,
-        subscription_end: subEnd,
-      });
+    // Normal login for other users
+    let admin = await store.getAdminByEmail(email);
+    if (!admin) {
+      return json({ success: false, message: "Invalid credentials" }, 401);
     }
 
     const ok = await bcrypt.compare(password, admin.password_hash);
@@ -51,16 +68,12 @@ export async function POST(req: NextRequest) {
     }
 
     const cookieValue = signSessionValue({ id: admin.id, email: admin.email, role: admin.role as "admin" | "seller" | "developer" });
-
     const res = json({ success: true, data: { id: admin.id, email: admin.email, role: admin.role } });
     res.cookies.set("ka_admin_session", cookieValue, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7,
     });
     return res;
-  } catch {
-    return json({ success: false, message: "Server error" }, 500);
+  } catch (e: any) {
+    return json({ success: false, message: e.message || "Server error" }, 500);
   }
 }
